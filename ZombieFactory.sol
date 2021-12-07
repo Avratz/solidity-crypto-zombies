@@ -1,40 +1,52 @@
 pragma solidity ^0.8.0;
 
-contract ZombieFactory {
+import "./Ownable.sol";
 
-    event NewZombie(uint zombieId, string name, uint dna);
+contract ZombieFactory is Ownable {
 
-    uint dnaDigits = 16;
-    uint dnaModulus = 10 ** dnaDigits;
+	event NewZombie(uint zombieId, string name, uint dna);
 
-    struct Zombie {
-        string name;
-        uint dna;
-    }
+	uint dnaDigits = 16;
+	uint dnaModulus = 10 ** dnaDigits;
+	uint cooldownTime = 1 days;
 
-    Zombie[] public zombies;
+	struct Zombie {
+		string name;
+		uint dna;
+		uint32 level; //using smallers uint and putting them together will save gas in structs. 
+		uint32 readyTime;
+	}
 
-    mapping (uint => address) public zombieToOwner;
-    mapping (address => uint) ownerZombieCount;
+	Zombie[] public zombies;
 
-    function _createZombie(string memory _name, uint _dna) internal {
-        Zombie memory newZombie = Zombie(_name, _dna);
-        zombies.push(newZombie); 
-        uint id = zombies.length;
-        zombieToOwner[id] = msg.sender;
-        ownerZombieCount[msg.sender]++;
-        emit NewZombie(id, _name, _dna);
-    }
+	mapping (uint => address) public zombieToOwner;
+	mapping (address => uint) ownerZombieCount;
 
-    function _generateRandomDna(string memory _str) private view returns (uint) {
-        uint rand = uint(keccak256(abi.encodePacked(_str)));
-        return rand % dnaModulus;
-    }
+	//Function visibility: 
+	// - public: function is public, can be called from outside the contract
+	// - private: function can only be called inside this contract.
+	// - internal: is the same as private, except that it's also accessible to contracts that inherit from this contract.
+	// - external is similar to public, except that these functions can ONLY be called outside the contract — they can't be called by other functions inside that contract. 
+	
+	function _createZombie(string memory _name, uint _dna) internal {
+		uint32 nextDay = uint32(now + cooldownTime);
+		Zombie memory newZombie = Zombie(_name, _dna, 1, nextDay);
+		zombies.push(newZombie); 
+		uint id = zombies.length;
+		zombieToOwner[id] = msg.sender;
+		ownerZombieCount[msg.sender]++;
+		emit NewZombie(id, _name, _dna);
+	}
 
-    function createRandomZombie(string memory _name) public {
-        require(ownerZombieCount[msg.sender] == 0);
-        uint randDna = _generateRandomDna(_name);
-        _createZombie(_name, randDna);
-    }
+	function _generateRandomDna(string memory _str) private view returns (uint) {
+		uint rand = uint(keccak256(abi.encodePacked(_str)));
+		return rand % dnaModulus;
+	}
+
+	function createRandomZombie(string memory _name) public {
+		require(ownerZombieCount[msg.sender] == 0);
+		uint randDna = _generateRandomDna(_name);
+		_createZombie(_name, randDna);
+	}
 
 }
