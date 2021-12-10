@@ -15,6 +15,8 @@ contract ZombieFactory is Ownable {
 		uint dna;
 		uint32 level; //using smallers uint and putting them together will save gas in structs. 
 		uint32 readyTime;
+		uint16 winCount;
+    uint16 lossCount;
 	}
 
 	Zombie[] public zombies;
@@ -30,7 +32,7 @@ contract ZombieFactory is Ownable {
 	
 	function _createZombie(string memory _name, uint _dna) internal {
 		uint32 nextDay = uint32(now + cooldownTime);
-		Zombie memory newZombie = Zombie(_name, _dna, 1, nextDay);
+		Zombie memory newZombie = Zombie(_name, _dna, 1, nextDay,0 ,0);
 		zombies.push(newZombie); 
 		uint id = zombies.length;
 		zombieToOwner[id] = msg.sender;
